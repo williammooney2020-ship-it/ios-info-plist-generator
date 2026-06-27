@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>iOS Info.plist Generator — Usage Descriptions, ATS & Background Modes</title>
+<meta name="description" content="Generate Info.plist keys for your iOS app. Covers all usage description strings, App Transport Security exceptions, background modes, custom URL schemes, and more. Export valid XML. Free, browser-only." />
+<link rel="canonical" href="https://ios-info-plist-generator.vercel.app/" />
+<meta property="og:title" content="iOS Info.plist Generator" />
+<meta property="og:description" content="Pick the capabilities your iOS app uses and get a valid Info.plist XML snippet. Usage descriptions, ATS, background modes, URL schemes. Free." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="iOS Info.plist Generator" />
+<meta name="twitter:description" content="Generate Info.plist keys for iOS apps — all usage strings, ATS, background modes. Free." />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"iOS Info.plist Generator","url":"https://ios-info-plist-generator.vercel.app/","description":"Generate iOS Info.plist XML snippets for usage descriptions, ATS, background modes, URL schemes, and more.","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+</script>
+<style>
+  :root{
+    --bg:#0b0c10;--panel:#15171f;--panel2:#1c1f2a;--ink:#eef1f7;--muted:#9aa3b5;
+    --line:#262a36;--accent:#5b8cff;--ok:#34d399;--warn:#fbbf24;--err:#f87171;
+    --radius:14px;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:radial-gradient(1100px 600px at 70% -10%,#0e2030 0,transparent 55%),var(--bg)}
+  header{padding:42px 22px 10px;max-width:1100px;margin:0 auto}
+  .badge{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);
+    border:1px solid var(--line);padding:5px 11px;border-radius:999px;background:var(--panel)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+  h1{font-size:30px;margin:16px 0 6px;letter-spacing:-.4px}
+  h1 span{color:var(--accent)}
+  .sub{color:var(--muted);max-width:640px}
+  main{max-width:1100px;margin:18px auto 60px;padding:0 22px;display:grid;grid-template-columns:1fr 400px;gap:22px;align-items:start}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+
+  /* Category cards */
+  .cat-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+  .cat-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02);cursor:pointer;user-select:none}
+  .cat-icon{font-size:18px;flex:none}
+  .cat-name{font-size:14.5px;font-weight:700;flex:1}
+  .cat-desc{font-size:12.5px;color:var(--muted)}
+  .cat-count{font-size:12px;font-weight:700;font-family:var(--mono);color:var(--accent);background:rgba(91,140,255,.12);padding:2px 8px;border-radius:6px}
+  .cat-toggle{color:var(--muted);font-size:13px;flex:none}
+  .cat-body{padding:12px 18px 14px}
+  .cat-body.collapsed{display:none}
+
+  /* Keys */
+  .key-row{margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.04);padding-bottom:10px}
+  .key-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .key-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+  .check-row{display:flex;align-items:baseline;gap:8px;cursor:pointer;font-size:13.5px}
+  .check-row input[type=checkbox]{cursor:pointer;accent-color:var(--accent);flex:none;margin-top:2px;width:15px;height:15px}
+  .check-row input[type=radio]{cursor:pointer;accent-color:var(--accent);flex:none}
+  .toggle-head{width:100%;margin-bottom:4px}
+  .key-name{font-family:var(--mono);font-size:12.5px;color:var(--accent)}
+  .key-label{font-size:13px;color:var(--muted)}
+  .key-hint{font-size:12px;color:var(--muted);margin:4px 0 0;line-height:1.4}
+  .info-row .key-info{font-size:12.5px;color:var(--muted);background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.15);border-radius:7px;padding:8px 12px}
+  input[type=text],select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:7px 12px;font:inherit;font-size:13.5px;outline:none;width:100%;margin-top:4px}
+  input[type=text]:focus,select:focus{border-color:var(--accent)}
+  .multi-options,.ats-options{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+  .bool-toggle{display:flex;gap:16px;margin-top:6px}
+
+  /* Output */
+  .output-sticky{position:sticky;top:16px}
+  .output-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .output-header{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);gap:8px;flex-wrap:wrap}
+  .output-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;flex:1}
+  .key-count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .action-btn{cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:5px 12px;
+    font:12px/1 inherit;font-weight:600;background:none;color:var(--muted)}
+  .action-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .action-btn.primary{background:linear-gradient(180deg,#6b97ff,#4a78ff);border:0;color:#fff}
+  .action-btn.primary:hover{opacity:.9}
+  pre{margin:0;padding:16px;font-size:12px;font-family:var(--mono);white-space:pre;
+    color:var(--ink);max-height:600px;overflow:auto;line-height:1.5;tab-size:2}
+
+  .tip-box{background:linear-gradient(135deg,#1a2035 0%,#141825 100%);border:1px solid #2a304a;
+    border-radius:14px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:12px}
+  footer{max-width:1100px;margin:0 auto;padding:0 22px 50px;color:#6b7385;font-size:12.5px;grid-column:1/-1}
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <span class="badge"><span class="dot"></span>Usage descriptions · ATS · Background modes · URL schemes · browser-only</span>
+  <h1>iOS <span>Info.plist Generator</span></h1>
+  <p class="sub">Check off the capabilities your app uses, fill in the description strings, and download a valid Info.plist XML snippet — ready to merge into your project.</p>
+</header>
+<main>
+
+<!-- Left: key pickers -->
+<div id="categoriesContainer">
+  <!-- rendered by JS -->
+</div>
+
+<!-- Right: output -->
+<div class="output-sticky">
+  <div class="output-card">
+    <div class="output-header">
+      <span class="output-title">Info.plist XML</span>
+      <span class="key-count" id="keyCount">0 keys</span>
+      <button class="action-btn" id="copyBtn" onclick="copyPlist()">Copy XML</button>
+      <button class="action-btn primary" onclick="downloadPlist()">↓ Info.plist</button>
+      <button class="action-btn" onclick="clearAll()" style="color:var(--err)">Clear</button>
+    </div>
+    <pre id="plistOutput">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE plist ...&gt;
+&lt;plist version="1.0"&gt;
+&lt;dict&gt;
+    &lt;!-- select keys on the left --&gt;
+&lt;/dict&gt;
+&lt;/plist&gt;</pre>
+  </div>
+
+  <div class="tip-box">
+    <div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:4px">✦ Support this project</div>
+      <div style="color:#9aa3b5;font-size:13px">Free tool by Orb Intelligence.</div>
+    </div>
+    <a href="https://buy.stripe.com/4gM28t2xG3SngLvbiY6wE01" target="_blank" rel="noopener"
+      style="display:inline-block;background:linear-gradient(180deg,#6b97ff,#4a78ff);color:#fff;font-weight:650;font-size:14px;padding:10px 20px;border-radius:10px;text-decoration:none;white-space:nowrap">
+      Support · $9.90
+    </a>
+  </div>
+</div>
+
+<footer>
+  Built by <b>Orb Intelligence</b>. All configuration is saved locally in your browser — nothing uploaded. Always validate your merged Info.plist with Xcode before submitting.
+  <br><br>
+  More free tools:
+  <a href="https://appstore-metadata-auditor.vercel.app/" rel="noopener">Metadata Auditor</a> ·
+  <a href="https://ios-privacy-policy-generator.vercel.app/" rel="noopener">Privacy Policy Generator</a> ·
+  <a href="https://ios-app-review-generator.vercel.app/" rel="noopener">Review Responder</a> ·
+  <a href="https://appstore-screenshot-generator-theta.vercel.app/" rel="noopener">Screenshot Generator</a> ·
+  <a href="https://appstore-keyword-optimizer.vercel.app/" rel="noopener">Keyword Optimizer</a> ·
+  <a href="https://appstore-release-notes-generator.vercel.app/" rel="noopener">Release Notes Generator</a> ·
+  <a href="https://ios-app-icon-resizer.vercel.app/" rel="noopener">Icon Resizer</a> ·
+  <a href="https://appstore-submission-checklist.vercel.app/" rel="noopener">Submission Checklist</a> ·
+  <a href="https://ios-privacy-manifest-generator.vercel.app/" rel="noopener">Privacy Manifest Generator</a> ·
+  <a href="https://ios-entitlements-generator.vercel.app/" rel="noopener">Entitlements Generator</a> ·
+  <a href="https://testflight-feedback-organizer.vercel.app/" rel="noopener">Beta Feedback Organizer</a> ·
+  <a href="https://appstore-localization-helper.vercel.app/" rel="noopener">Localization Helper</a> ·
+  <a href="https://appstore-age-rating-calculator.vercel.app/" rel="noopener">Age Rating Calculator</a> ·
+  <a href="https://ios-iap-configurator.vercel.app/" rel="noopener">IAP Configurator</a> ·
+  <a href="https://ios-push-payload-builder.vercel.app/" rel="noopener">Push Payload Builder</a> ·
+  <a href="https://xcode-build-phase-generator.vercel.app/" rel="noopener">Build Phase Generator</a> ·
+  <a href="https://ios-url-scheme-tester.vercel.app/" rel="noopener">URL Scheme Tester</a> ·
+  <a href="https://swift-package-manifest-builder.vercel.app/" rel="noopener">SPM Manifest Builder</a> ·
+  <a href="https://ios-info-plist-generator.vercel.app/" rel="noopener">Info.plist Generator</a>
+</footer>
+
+</main>
+<script src="plist.js"></script>
+<script>
+// Build category cards in HTML
+(function() {
+  const container = document.getElementById("categoriesContainer");
+  CATEGORIES.forEach(cat => {
+    const card = document.createElement("div");
+    card.className = "cat-card";
+    card.innerHTML = `
+      <div class="cat-head" onclick="toggleCat('${cat.id}')">
+        <span class="cat-icon">${cat.icon}</span>
+        <div style="flex:1">
+          <div class="cat-name">${cat.name}</div>
+          <div class="cat-desc">${cat.desc}</div>
+        </div>
+        <span class="cat-toggle" id="arrow_${cat.id}">▼</span>
+      </div>
+      <div class="cat-body" id="cat_${cat.id}"></div>`;
+    container.appendChild(card);
+  });
+
+  window.toggleCat = function(id) {
+    const body = document.getElementById("cat_" + id);
+    const arrow = document.getElementById("arrow_" + id);
+    const collapsed = body.classList.toggle("collapsed");
+    if (arrow) arrow.textContent = collapsed ? "▶" : "▼";
+  };
+})();
+</script>
+</body>
+</html>
